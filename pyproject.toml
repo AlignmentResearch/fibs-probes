@@ -1,0 +1,54 @@
+[project]
+name = "probe-inference"
+version = "0.1.0"
+description = "Inference for four activation-probe architectures: linear, MLP, EFC and axial."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["torch>=2.2"]
+
+[project.optional-dependencies]
+# load_probe_from_hub downloads trained probes from the Hugging Face Hub.
+hub = ["huggingface_hub>=0.23"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6", "huggingface_hub>=0.23"]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/probe_inference"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+# The probe classes are kept as close as possible to the code they were trained with.
+extend-exclude = ["src/probe_inference/archs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "D"]
+ignore = ["D105", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+"scripts/**" = ["D"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# torch warns at import when numpy is absent; this package does not use numpy.
+filterwarnings = ["ignore:Failed to initialize NumPy:UserWarning"]
