@@ -1,0 +1,47 @@
+# The FIBS example has its own environment, so that the package and its CI do not depend on transformers,
+# pyarrow or Jupyter. Run it with `uv run --project examples/fibs ...` (see README.md).
+[project]
+name = "probe-inference-fibs-example"
+version = "0"
+description = "From a FIBS row to a probe score: Qwen3.5-2B activations scored with probe-inference."
+requires-python = ">=3.11"
+dependencies = [
+    "probe-inference",
+    "torch>=2.2",
+    "transformers>=5.2",
+    "huggingface_hub>=0.23",
+    "pyarrow>=16",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+# Only needed to open or execute the notebook: `uv run --project examples/fibs --group notebook jupyter lab`.
+notebook = ["jupyterlab>=4", "ipykernel>=6"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+probe-inference = { path = "../..", editable = true }
+# As in the package's own pyproject.toml: the CPU wheels (they include Apple's MPS backend on macOS).
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# The example is a directory of modules that import each other by name.
+pythonpath = ["."]
+
+# Ruff uses this file for examples/fibs; it adds nothing to the package's settings except the import roots
+# and no docstring rules.
+[tool.ruff]
+extend = "../../pyproject.toml"
+src = ["../../src", "."]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

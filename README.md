@@ -134,6 +134,21 @@ up to 6 epochs, EFC and axial for up to 4, with early stopping on the validation
 probe is the checkpoint with the lowest validation loss. The weights repository's card gives each probe's
 validation AUROC.
 
+## Example
+
+`examples/fibs/` runs the whole path: rows of FIBSv1 from the Hugging Face Hub, Qwen3.5-2B activations,
+`probe.read_mask` and `probe.score`, with the published Qwen3.5-2B probes or, optionally, random ones. It has its own
+uv environment, so its dependencies (transformers, pyarrow, Jupyter) are not the package's:
+
+```bash
+cp examples/fibs/fibs_end_to_end.ipynb examples/fibs/fibs_end_to_end.local.ipynb  # run a gitignored copy
+uv run --project examples/fibs --group notebook jupyter lab examples/fibs/fibs_end_to_end.local.ipynb
+uv run --project examples/fibs python examples/fibs/activations.py --per-quadrant 2  # activations to a .pt file
+uv run --project examples/fibs pytest examples/fibs/tests                            # offline tests
+```
+
+`examples/fibs/README.md` has the requirements (a 5 GB model download) and the caveats.
+
 ## Probe directory format
 
 A trained probe is one directory, such as `qwen3.5-9b/efc/`. The same layout is read from a local
