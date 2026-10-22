@@ -8,7 +8,7 @@ import torch
 import token_masks
 
 VOCAB = ["<|im_start|>", "<|im_end|>", "</think>", "<think>", "user", "assistant", "system", "\n", "\n\n"]
-VOCAB += ["Hi", "Did", "you", "lie", "?", "No", "."]
+VOCAB += ["Hi", "Did", "you", "lie", "?", "No", ".", "say", "hm"]
 
 
 class Tokenizer:
@@ -42,6 +42,17 @@ def test_masks_of_a_rendered_follow_up() -> None:
     assert not masks.prompt_mask[-1] and not masks.completion_mask[-1]
 
 
+def test_a_quoted_turn_marker_is_message_content() -> None:
+    # The follow-up question quotes <|im_start|>user and <|im_end|>: "Did you say <|im_start|>user\n<|im_end|>?".
+    question = ["<|im_start|>", "user", "\n", "Did", "you", "say", "<|im_start|>", "user", "\n", "<|im_end|>", "?"]
+    question += ["<|im_end|>", "\n"]
+    tokens = SYSTEM + question + ASSISTANT
+    masks = token_masks.token_masks(encode(tokens), Tokenizer())
+
+    assert int(masks.followup_start) == len(SYSTEM)
+    assert [tokens[i] for i in masks.completion_mask.nonzero().flatten()] == ["No", ".", "<|im_end|>"]
+
+
 @pytest.mark.parametrize(
     ("tokens", "match"),
     [
@@ -51,6 +62,7 @@ def test_masks_of_a_rendered_follow_up() -> None:
         (USER + USER, "expected \\('user', 'assistant'\\)"),
         (SYSTEM + USER + ASSISTANT[:3] + ASSISTANT[7:], "no </think>"),
         (SYSTEM + USER + ASSISTANT[:7] + ASSISTANT[9:], "The answer is empty"),
+        (SYSTEM + USER + ASSISTANT[:4] + ["hm"] + ASSISTANT[4:], "thinking block is not empty"),
     ],
 )
 def test_refuses_a_transcript_that_does_not_end_with_a_closed_answer(tokens: list[str], match: str) -> None:

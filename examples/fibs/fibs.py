@@ -7,7 +7,7 @@ probes score the follow-up answer, so a row's label is set by the second term.
 
 The dataset is public, so no token is needed. ``REVISION`` pins the commit the published probes were trained on.
 A split is a ~200 MB parquet file, read here over the Hub's file system one row group at a time, so taking a few
-rows downloads a few MB.
+rows downloads only the first row groups (about 10-15 MB).
 """
 
 from __future__ import annotations

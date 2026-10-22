@@ -102,7 +102,8 @@ probe's window. The arguments are:
   end-of-turn token. For a `No.` prefill that is `No`, `.` and `<|im_end|>`. For Kimi K3 it is every token
   after `<|open|>response<|sep|>`: `No`, `.`, `<|close|>`, `response`, `<|sep|>`, `<|close|>`, `message`,
   `<|sep|>` and `<|end_of_msg|>`.
-- `prompt_mask`: True on every other real token of the row.
+- `prompt_mask`: True on every other real token of the row up to the answer. Tokens after the final
+  end-of-turn token, such as the newline the Qwen3.5 chat template appends, are in neither mask.
 - `followup_start_positions`: the index of the final user turn's first token (`<|im_start|>`, or
   `<|open|>` for Kimi K3).
 

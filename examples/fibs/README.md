@@ -16,7 +16,8 @@ loads probes with random weights instead.
 ## Requirements
 
 - FIBS, `AlignmentResearch/fibs-v1` at `65dccf12`, the revision the published probes were trained on. The dataset is
-  public, so no Hugging Face token is needed. Only the first few MB of a split are fetched.
+  public, so no Hugging Face token is needed. A split is read in part, a row group at a time: the notebook's rows
+  fetch about 10-15 MB per split, not the whole ~200 MB file.
 - `Qwen/Qwen3.5-2B` at `15852e8c`: a download of about 5 GB on the first run. It needs `transformers>=5.2`.
 - The published probes, `AlignmentResearch/probe-inference-weights` at the package's `WEIGHTS_REVISION`: at most a
   few tens of MB for the four Qwen3.5-2B probes. Random probes need no download.

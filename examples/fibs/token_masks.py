@@ -17,6 +17,7 @@ The newline that the chat template appends after the final ``<|im_end|>`` is in 
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -55,9 +56,13 @@ def _role(tokenizer: Any, ids: list[int], turn_start: int) -> str:
 def token_masks(input_ids: torch.Tensor, tokenizer: Any) -> TokenMasks:
     """Build the token masks of a transcript that ends with a user turn and the assistant's closed answer.
 
-    The answer's ``<|im_end|>`` is the last one in ``input_ids``, the assistant turn is the last ``<|im_start|>``
-    before it, and the final user turn is the ``<|im_start|>`` before that. The answer starts after the
-    assistant turn's ``</think>`` and the whitespace that follows it.
+    The answer's ``<|im_end|>`` is the last one in ``input_ids``. A ``<|im_start|>`` opens a turn only at a turn
+    boundary: at position 0 or 1, or one or two positions after an ``<|im_end|>`` (the template puts a newline
+    between). The assistant turn is the last boundary before the answer's ``<|im_end|>``, and the final user turn is
+    the boundary before that. Marker tokens anywhere else, such as an ``<|im_start|>`` that a message quotes, are
+    message content. A message that quotes a whole boundary (``<|im_end|>``, a newline and ``<|im_start|>``) cannot
+    be told from a real one by token ids; the role check below catches most such cases. The answer starts after the
+    assistant turn's empty thinking block and the whitespace that follows it.
 
     Args:
         input_ids: ``(seq,)`` token ids of the whole rendered transcript (see ``activations.render``).
@@ -79,19 +84,23 @@ def token_masks(input_ids: torch.Tensor, tokenizer: Any) -> TokenMasks:
     answer_end = ends[-1]
     if turn_start in ids[answer_end:]:
         raise ValueError(f"A turn opens after the final {END_OF_TURN}; the answer must be the last, closed turn.")
-    starts = [i for i, token in enumerate(ids[:answer_end]) if token == turn_start]
+    starts = [
+        i
+        for i, token in enumerate(ids[:answer_end])
+        if token == turn_start and (i <= 1 or end_of_turn in ids[max(i - 2, 0) : i])
+    ]
     if len(starts) < 2:
         raise ValueError("The transcript needs a user turn and then an assistant turn.")
     user_start, assistant_start = starts[-2:]
     roles = (_role(tokenizer, ids, user_start), _role(tokenizer, ids, assistant_start))
     if roles != ("user", "assistant"):
         raise ValueError(f"The final two turns are {roles}; expected ('user', 'assistant').")
-    if end_of_turn not in ids[user_start:assistant_start]:
-        raise ValueError("The final user turn is not closed before the assistant turn opens.")
     try:
         answer_start = ids.index(think_end, assistant_start, answer_end) + 1
     except ValueError:
         raise ValueError(f"The assistant turn has no {THINK_END}; render with enable_thinking=False.") from None
+    if not re.fullmatch(r"assistant\s*<think>\s*</think>", tokenizer.decode(ids[assistant_start + 1 : answer_start])):
+        raise ValueError("The assistant turn's thinking block is not empty; render with enable_thinking=False.")
     while answer_start < answer_end and not tokenizer.decode([ids[answer_start]]).strip():
         answer_start += 1
     if answer_start == answer_end:
