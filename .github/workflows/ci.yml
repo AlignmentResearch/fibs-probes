@@ -27,3 +27,6 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest
+
+      # The FIBS example has its own environment. Its tests need neither the network nor the model.
+      - run: uv run --project examples/fibs --locked pytest examples/fibs/tests

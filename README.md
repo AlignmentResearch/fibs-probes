@@ -102,7 +102,8 @@ probe's window. The arguments are:
   end-of-turn token. For a `No.` prefill that is `No`, `.` and `<|im_end|>`. For Kimi K3 it is every token
   after `<|open|>response<|sep|>`: `No`, `.`, `<|close|>`, `response`, `<|sep|>`, `<|close|>`, `message`,
   `<|sep|>` and `<|end_of_msg|>`.
-- `prompt_mask`: True on every other real token of the row.
+- `prompt_mask`: True on every other real token of the row up to the answer. Tokens after the final
+  end-of-turn token, such as the newline the Qwen3.5 chat template appends, are in neither mask.
 - `followup_start_positions`: the index of the final user turn's first token (`<|im_start|>`, or
   `<|open|>` for Kimi K3).
 
@@ -133,6 +134,21 @@ training rows and 5,000 validation rows, the same rows for every model, seed 0. 
 up to 6 epochs, EFC and axial for up to 4, with early stopping on the validation loss; each published
 probe is the checkpoint with the lowest validation loss. The weights repository's card gives each probe's
 validation AUROC.
+
+## Example
+
+`examples/fibs/` runs the whole path: rows of FIBSv1 from the Hugging Face Hub, Qwen3.5-2B activations,
+`probe.read_mask` and `probe.score`, with the published Qwen3.5-2B probes or, optionally, random ones. It has its own
+uv environment, so its dependencies (transformers, pyarrow, Jupyter) are not the package's:
+
+```bash
+cp examples/fibs/fibs_end_to_end.ipynb examples/fibs/fibs_end_to_end.local.ipynb  # run a gitignored copy
+uv run --project examples/fibs --group notebook jupyter lab examples/fibs/fibs_end_to_end.local.ipynb
+uv run --project examples/fibs python examples/fibs/activations.py --per-quadrant 2  # activations to a .pt file
+uv run --project examples/fibs pytest examples/fibs/tests                            # offline tests
+```
+
+`examples/fibs/README.md` has the requirements (a 5 GB model download) and the caveats.
 
 ## Probe directory format
 
